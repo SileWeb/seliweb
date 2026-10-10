@@ -80,7 +80,7 @@ export function Settings() {
       {inp("contact_email", "Contact email")}{inp("social", "Social links", { h: "Comma se alag: facebook, youtube ke URLs" })}
     </Card>
     <Card n="6" t="Image watermark" s="Slider images par aap ki website ka naam likha jata hai (import aur manual upload dono me)">
-      {chk("wm_enabled", "Images par watermark lagayen")}{inp("wm_text", "Watermark text", { span: true, h: "Apna domain likhen, jaise softhub.com. Khali ho to us waqt ka address use hota hai" })}
+      {chk("wm_enabled", "Images par watermark lagayen")}{inp("wm_text", "Watermark text", { span: true, h: "Apna domain likhen, jaise filecr.co.uk. Khali ho to us waqt ka address use hota hai" })}
     </Card>
     <Card n="5" t="Footer" s="Sab se neeche ka hissa">
       {inp("footer_text", "Copyright text", { span: true, h: "Khali ho to ©SiteName - All Rights Reserved 2026 dikhe ga" })}

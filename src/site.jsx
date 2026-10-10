@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 
 export const DEFAULTS = {
-  site_name: "SoftHub", tagline: "", logo_url: "", favicon_url: "", primary_color: "#0a8f6b",
+  site_name: "Filecr", tagline: "", logo_url: "", favicon_url: "", primary_color: "#0a8f6b",
   meta_title: "", meta_description: "", show_categories_btn: true,
   cta_enabled: false, cta_label: "Add to chrome", cta_url: "",
   home_items: 8, sidebar_items: 6, footer_text: "", footer_links: "", wm_enabled: true, wm_text: "", contact_email: "", social: "",
