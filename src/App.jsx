@@ -2,7 +2,7 @@ import { useEffect, useState, lazy, Suspense } from "react";
 import { Routes, Route, Link, NavLink, useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { supabase } from "./supabase";
 import { Win, Apple, Game, Search as SearchIcon, Grid, Folder, Down, Android, Book, Video, Cloud, Star, Crown, Chev, Tick, GridFill, Close } from "./icons.jsx";
-import { useSettings, JsonLd } from "./site.jsx";
+import { useSettings, JsonLd, Noindex, setMeta } from "./site.jsx";
 const Post = lazy(() => import("./Post.jsx"));
 const Admin = lazy(() => import("./Admin.jsx"));
 
@@ -261,6 +261,7 @@ img,svg{max-width:100%}
 .head .btn{padding:4px 18px;line-height:20px}
 .side{padding:20px 27px}
 .side h2{padding-bottom:17px;margin-bottom:16px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 `;
 
 
@@ -324,13 +325,17 @@ function SideBlock({ cat }) {
 function Home() {
   const st = useSettings();
   const [cats, setCats] = useState([]);
+  useEffect(() => {
+  setMeta({ title: st.meta_title || st.site_name, description: st.meta_description || st.tagline, canonical: "/", image: st.logo_url, siteName: st.site_name });
+}, [st]);
   useEffect(() => { supabase.from("categories").select("*").order("sort_order").then(({ data }) => setCats(data || [])); }, []);
   return (
     <div className="wrap">
       <JsonLd id="site" data={{ "@context": "https://schema.org", "@graph": [
         { "@type": "WebSite", name: st.site_name, url: location.origin, potentialAction: { "@type": "SearchAction", target: `${location.origin}/search?q={search_term_string}`, "query-input": "required name=search_term_string" } },
         { "@type": "Organization", name: st.site_name, url: location.origin, logo: st.logo_url || undefined, email: st.contact_email || undefined, sameAs: (st.social || "").split(",").map((x) => x.trim()).filter(Boolean) }] }} />
-      <main>{cats.filter((c) => c.show_on_home).map((c) => <Section key={c.id} cat={c} />)}</main>
+      <main><h1 className="sr-only">{st.meta_title || st.site_name}</h1>{cats.filter((c) => c.show_on_home).map((c) => <Section key={c.id} cat={c} />)}</main>
+      
       <aside>{cats.filter((c) => c.show_in_sidebar).map((c) => <SideBlock key={c.id} cat={c} />)}</aside>
     </div>
   );
@@ -341,6 +346,7 @@ const PAGE = 20;
 
 function Category() {
   const { slug } = useParams();
+  const st = useSettings();
   const [cats, setCats] = useState([]), [subs, setSubs] = useState([]), [pick, setPick] = useState([]);
   const [sort, setSort] = useState("new"), [n, setN] = useState(PAGE), [list, setList] = useState([]);
   const [more, setMore] = useState(false), [fopen, setFopen] = useState(false);
@@ -362,8 +368,22 @@ function Category() {
     q.then(({ data }) => { const d = data || []; setMore(d.length > n); setList(d.slice(0, n)); });
   }, [cid, sort, pick, n]);
 
+  useEffect(() => {
+  if (!cat) return;
+  setMeta({
+    title: `${cat.name} Software Download - ${st.site_name}`,
+    description: cat.description || `Browse and download the latest ${cat.name} software with version history and direct download links.`,
+    canonical: `/category/${cat.slug}`,
+    image: st.logo_url,
+    siteName: st.site_name,
+  });
+}, [cat, st]);
+
+
+
+
   if (!cats.length) return null;
-  if (!cat) return <div className="wrap">Category nahi mili.</div>;
+  if (!cat) return <div className="wrap">Category not found.</div>;
   const tog = (x) => { setPick(pick.includes(x) ? pick.filter((y) => y !== x) : [...pick, x]); setN(PAGE); };
 
   return (<>
@@ -384,7 +404,7 @@ function Category() {
             <option value="new">Newest</option><option value="dl">Most downloaded</option><option value="az">Name (A-Z)</option>
           </select></div>
         {list.map((s) => <Row key={s.id} s={s} />)}
-        {!list.length && <p>Is category me abhi koi software nahi.</p>}
+        {!list.length && <p>No software in this category yet.</p>}
         {more && <p style={{ textAlign: "center" }}><button className="btn" onClick={() => setN(n + PAGE)}>Load more</button></p>}
       </main>
     </div>
@@ -425,7 +445,7 @@ function Nav() {
           {q && <button type="button" className="sclose" aria-label="Clear" onClick={() => { setQ(""); setSug([]); }}><Close /></button>}
         </form>
         {focus && q.trim().length >= 2 && (<div className="sugg">
-          <div className="sugt">{sug.length ? "Products" : "Kuch nahi mila"}</div>
+          <div className="sugt">{sug.length ? "Products" : "No results found"}</div>
           {sug.map((s) => <Link key={s.id} to={`/software/${s.slug}`} className="sgi" onClick={() => setFocus(false)}>
             {s.icon_url ? <img src={s.icon_url} alt="" width="32" height="32" /> : <b>{s.name[0]}</b>}<span>{s.name}<small>{s.subcategory}</small></span></Link>)}
         </div>)}
@@ -454,9 +474,10 @@ function Search() {
   const [sp] = useSearchParams();
   const q = sp.get("q") || "";
   const [list, setList] = useState([]);
+
+  useEffect(() => { document.title = `Search: ${q}`; }, [q]);
   useEffect(() => { supabase.from("software").select(COLS).ilike("name", `%${q}%`).eq("status", "published").limit(50).then(({ data }) => setList(data || [])); }, [q]);
-  return <div className="wrap" style={{ display: "block" }}><div className="head"><h2>Search: {q}</h2></div>{list.length ? list.map((s) => <Row key={s.id} s={s} />) : <p>Kuch nahi mila.</p>}</div>;
-}
+return <div className="wrap" style={{ display: "block" }}><Noindex follow /><div className="head"><h2>Search: {q}</h2></div>{list.length ? list.map((s) => <Row key={s.id} s={s} />) : <p>Kuch nahi mila.</p>}</div>;}
 
 function Footer() {
   const st = useSettings();
@@ -480,20 +501,25 @@ export default function App() {
   useEffect(() => {
     document.documentElement.style.setProperty("--pc", st.primary_color);
     if (st.favicon_url) { let l = document.querySelector("link[rel=icon]"); if (!l) { l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); } l.href = st.favicon_url; }
-    if (!location.pathname.startsWith("/software")) document.title = st.meta_title || st.site_name;
   }, [st]);
   return (<>
     <style>{css}</style>
     {!admin && <Nav />}
     <Suspense fallback={null}>
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="/category/:slug" element={<Category />} />
-      <Route path="/software/:slug" element={<Post />} />
-      <Route path="/admin" element={<Admin />} />
-    </Routes>
+<Routes>
+  <Route path="/" element={<Home />} />
+  <Route path="/search" element={<Search />} />
+  <Route path="/category/:slug" element={<Category />} />
+  <Route path="/software/:slug" element={<Post />} />
+  <Route path="/admin" element={<><Noindex /><Admin /></>} />
+  <Route path="*" element={<NotFound />} />
+</Routes>
     </Suspense>
     {!admin && <Footer />}
   </>);
+}
+
+function NotFound() {
+  useEffect(() => { document.title = "404 - Page not found"; }, []);
+  return <div className="wrap" style={{ display: "block" }}><Noindex /><div className="head"><h2>404 - Page not found</h2></div><p>Ye page maujood nahi. <Link to="/">Home par jayen</Link></p></div>;
 }

@@ -25,6 +25,8 @@ export function useSettings() {
 export function JsonLd({ id, data }) {
   const json = JSON.stringify(data);
   useEffect(() => {
+      document.getElementById("ld-" + id)?.remove();   // ← ye nayi line
+
     const el = document.createElement("script");
     el.type = "application/ld+json"; el.id = "ld-" + id; el.text = json;
     document.head.appendChild(el);
@@ -32,3 +34,51 @@ export function JsonLd({ id, data }) {
   }, [id, json]);
   return null;
 }
+
+// Page ko Google index na kare. follow=true: links follow hon, page index na ho
+export function Noindex({ follow = false }) {
+  useEffect(() => {
+    document.head.querySelector('link[rel="canonical"]')?.remove();
+    const m = document.createElement("meta");
+    m.name = "robots";
+    m.content = follow ? "noindex, follow" : "noindex, nofollow";
+    document.head.appendChild(m);
+    return () => m.remove();
+  }, [follow]);
+  return null;
+}
+
+const upsert = (tag, key, name, val) => {
+  let el = document.head.querySelector(`${tag}[${key}="${name}"]`);
+  if (!el) { el = document.createElement(tag); el.setAttribute(key, name); document.head.appendChild(el); }
+  el.setAttribute(tag === "link" ? "href" : "content", val || "");
+};
+
+// Title, description, canonical, Open Graph, Twitter, sab ek jagah
+export function setMeta({ title, description, canonical, image, type = "website", siteName }) {
+  if (title) {
+    document.title = title;
+    upsert("meta", "property", "og:title", title);
+    upsert("meta", "name", "twitter:title", title);
+  }
+  if (description != null) {
+    upsert("meta", "name", "description", description);
+    upsert("meta", "property", "og:description", description);
+    upsert("meta", "name", "twitter:description", description);
+  }
+  if (canonical) {
+    const url = location.origin + canonical;
+    upsert("link", "rel", "canonical", url);
+    upsert("meta", "property", "og:url", url);
+  }
+  upsert("meta", "property", "og:type", type);
+  if (siteName) upsert("meta", "property", "og:site_name", siteName);
+  upsert("meta", "name", "twitter:card", image ? "summary_large_image" : "summary");
+  if (image) {
+    upsert("meta", "property", "og:image", image);
+    upsert("meta", "name", "twitter:image", image);
+  } else {
+    document.head.querySelectorAll('meta[property="og:image"],meta[name="twitter:image"]').forEach((e) => e.remove());
+  }
+}
+

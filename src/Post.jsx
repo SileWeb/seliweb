@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "./supabase";
 import { Heart, Clock, Down, Chev } from "./icons.jsx";
-import { JsonLd } from "./site.jsx";
-
+import { JsonLd, Noindex, setMeta } from "./site.jsx";
 const css = `
 .ban{background:linear-gradient(90deg,#10c9a0,#1fc3f0);color:#fff;padding:22px 0}
 .ban .in{max-width:1224px;margin:0 auto;padding:0 16px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -42,20 +41,15 @@ const newest = (vs) => [...(vs || [])].sort((a, b) => (b.is_latest - a.is_latest
 const Stars = ({ n }) => <span aria-label={`${n} stars`}>{[1, 2, 3, 4, 5].map((i) => { const p = Math.max(0, Math.min(1, n - (i - 1))) * 100; return <span key={i} style={{ background: `linear-gradient(90deg,#f5b301 ${p}%,#ddd ${p}%)`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>★</span>; })}</span>;
 // Title ke end me hamesha "(Download Latest <is saal>) - FileCR". Saal computer ki date se khud badalta hai (2027 aate hi sab posts me 2027).
 // Purani title me pehle se ye likha ho to hata kar naya laga deta hai. Alag likhna ho to sirf neeche wali line badlen.
-const TITLE_END = (year) => `(Download Latest ${year}) - FileCR`;
+const BRAND = "Filecr"; // yahan apni site ka asli naam likhen
+const TITLE_END = (year) => `(Download Latest ${year}) - ${BRAND}`;
 const withYear = (base) => {
   let t = String(base || "").trim(), prev;
   do {
     prev = t;
-    t = t.replace(/[\s\-–|]*FileCR\s*\)?\s*$/i, "").replace(/[\s\-–|]*\(?\s*(?:Free\s+)?Download\s+Latest\s+\d{4}\s*\)?\s*$/i, "").trim();
+    t = t.replace(new RegExp(`[\\s\\-–|]*(?:FileCR|${BRAND})\\s*\\)?\\s*$`, "i"), "").replace(/[\s\-–|]*\(?\s*(?:Free\s+)?Download\s+Latest\s+\d{4}\s*\)?\s*$/i, "").trim();
   } while (t !== prev);
   return `${t.replace(/[\s\-–|]+$/, "")} ${TITLE_END(new Date().getFullYear())}`.trim();
-};
-const meta = (t, d) => {
-  document.title = t;
-  let m = document.querySelector("meta[name=description]");
-  if (!m) { m = document.createElement("meta"); m.name = "description"; document.head.appendChild(m); }
-  m.content = d || "";
 };
 
 export default function Post() {
@@ -86,10 +80,16 @@ export default function Post() {
           }
         }
         if (!on) return;
-        if (!data) { setErr(`Ye post nahi mili (slug: ${slug})`); return; }
+        if (!data) { setErr(`Post not found. (slug: ${slug})`); return; }
         data.versions = data.versions || [];
         setS(data);
-        meta(withYear(data.seo_title || `${data.name} ${newest(data.versions)?.version || ""}`), data.short_desc);
+        setMeta({
+  title: withYear(data.seo_title || `${data.name} ${newest(data.versions)?.version || ""}`),
+  description: (data.short_desc || "").slice(0, 160),
+  canonical: `/software/${data.slug}`,
+  image: (data.images || [])[0] || data.icon_url,
+  type: "article",
+});
         try { setFav(JSON.parse(localStorage.getItem("fav") || "[]").includes(data.id)); } catch { /* ignore */ }
         supabase.from("software").select("id,name,slug,icon_url,platform,versions(version,file_size_mb,is_latest,release_date)").eq("category_id", data.category_id).neq("id", data.id).eq("status", "published").limit(6).then(({ data: x }) => on && setRel(x || []));
         supabase.from("comments").select("name,message,created_at").eq("software_id", data.id).eq("approved", true).order("created_at", { ascending: false }).then(({ data: x }) => on && setCm(x || []));
@@ -98,7 +98,7 @@ export default function Post() {
     return () => { on = false; };
   }, [slug]);
 
-  if (err) return <div style={{ padding: 40 }}><p><b>Post load nahi hui:</b> {err}</p><Link to="/">← Home</Link></div>;
+if (err) return <div style={{ padding: 40 }}><Noindex /><p><b>Could not load this post:</b> {err}</p><Link to="/">← Home</Link></div>;
 
   if (!s) return <div style={{ padding: 40 }}>Loading...</div>;
   const lv = newest(s.versions);
@@ -170,7 +170,7 @@ export default function Post() {
           <h2>Comments</h2>
           {cm.map((c, k) => <p key={k}><b>{c.name}</b> · <small>{dt(c.created_at)}</small><br />{c.message}</p>)}
           <h3>Leave a comment</h3>
-          {sent ? <p style={{ color: "var(--pc,#0a8f6b)" }}>Shukriya! Comment review ke baad nazar aaye ga.</p> : (
+          {sent ? <p style={{ color: "var(--pc,#0a8f6b)" }}>Thanks! Your comment will appear after review.</p> : (
             <form onSubmit={submit}>
               <input name="name" placeholder="Name" required /><input name="email" type="email" placeholder="Email" required />
               <textarea name="message" rows="4" placeholder="Write your comment here..." required />

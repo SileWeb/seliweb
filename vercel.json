@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/robots.txt", "destination": "/api/robots" },
+    { "source": "/software/:slug", "destination": "/api/page?type=post&slug=:slug" },
+    { "source": "/category/:slug", "destination": "/api/page?type=category&slug=:slug" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/search", "destination": "/index.html" },
+    { "source": "/((?!api/).*)", "destination": "/api/page?type=notfound" }
+  ]
+}

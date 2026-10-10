@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Admin aur search pages crawl na hon
+Disallow: /admin
+
+# Sitemap (domain apna daalen)
+Sitemap: https://filecr.co.uk/sitemap.xml
