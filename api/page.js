@@ -1,4 +1,4 @@
-const BRAND = "SoftHub"; // Post.jsx wale BRAND ke barabar hi rakhen
+const BRAND = "Filecr"; // Post.jsx wale BRAND ke barabar hi rakhen
 const SB = process.env.VITE_SUPABASE_URL;
 const KEY = process.env.VITE_SUPABASE_KEY;
 
