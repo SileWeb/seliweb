@@ -106,7 +106,7 @@ export default function Admin() {
         <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}><h3 style={{ margin: 0 }}>Posts ({posts.length})</h3>
           <input className="a-search" placeholder="Search..." value={q} onChange={(e) => setQ(e.target.value)} style={{ marginLeft: "auto" }} />
           <button className="a-btn a-pri" onClick={openNew}>+ New Post</button></div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}><button className="a-btn" style={{ color: "#e5484d" }} onClick={() => wipe(true)}>Sirf Draft delete karen</button><button className="a-btn" style={{ color: "#e5484d" }} onClick={() => wipe(false)}>Sari posts delete karen</button></div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}><button className="a-btn" style={{ color: "#e5484d" }} onClick={() => wipe(true)}>Sirf Draft delete karen</button></div>
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
           {[["all", "All"], ["published", "Published"], ["draft", `Draft (${nDraft})`], ["scheduled", "Scheduled"]].map(([k, l]) => <button key={k} className={"a-btn" + (flt === k ? " a-pri" : "")} onClick={() => setFlt(k)}>{l}</button>)}
         </div>

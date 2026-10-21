@@ -302,7 +302,7 @@ function Mini({ s }) {
 function useList(catId, limit) {
   const [list, setList] = useState([]);
   useEffect(() => {
-    supabase.from("software").select(COLS).eq("category_id", catId).eq("status", "published").order("created_at", { ascending: false }).limit(limit).then(({ data }) => setList(data || []));
+    supabase.from("software").select(COLS).eq("category_id", catId).eq("status", "published").order("published_at", { ascending: false, nullsFirst: false }).limit(limit).then(({ data }) => setList(data || []));
   }, [catId, limit]);
   return list;
 }
@@ -341,7 +341,7 @@ function Home() {
   );
 }
 
-const SORTS = { new: ["created_at", false], dl: ["download_count", false], az: ["name", true] };
+const SORTS = { new: ["published_at", false], dl: ["download_count", false], az: ["name", true] };
 const PAGE = 20;
 
 function Category() {
