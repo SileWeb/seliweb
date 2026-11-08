@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "./supabase";
 import { css, F, upload, slugify } from "./adminkit.jsx";
@@ -30,6 +30,8 @@ export default function Admin() {
   const [cats, setCats] = useState([]), [posts, setPosts] = useState([]), [q, setQ] = useState(""), [flt, setFlt] = useState("all");
   const [f, setF] = useState(EMPTY), [vs, setVs] = useState([{ ...EV, is_latest: true }]);
   const [msg, setMsg] = useState(""), [busy, setBusy] = useState(false);
+  const [bump, setBump] = useState(false);          // "Latest date laga kar top par lao"
+  const openEditRef = useRef(null);
   const siteSt = useSettings(), wm = siteSt.wm_enabled ? (siteSt.wm_text || location.host) : "";
 
   useEffect(() => {
@@ -41,20 +43,26 @@ export default function Admin() {
     supabase.from("categories").select("id,name").order("sort_order").then(({ data }) => setCats(data || []));
     supabase.from("software").select("id,name,slug,status,download_count,publish_at").order("created_at", { ascending: false }).limit(200).then(({ data }) => setPosts(data || []));
   };
-  useEffect(() => { if (user) load(); }, [user, tab]);   // tab badalne par list dobara aati hai
+  useEffect(() => { if (user) load(); }, [user, tab]);
+  useEffect(() => {   // /admin?edit=ID (new tab me khola gaya) to seedha wahi post edit ho
+    if (!user) return;
+    const id = new URLSearchParams(window.location.search).get("edit");
+    if (id && openEditRef.current) { openEditRef.current(+id); window.history.replaceState(null, "", window.location.pathname); }
+  }, [user]);   // tab badalne par list dobara aati hai
 
   if (user === undefined) return null;
   if (!user) return <Login />;
 
-  const openNew = () => { setF(EMPTY); setVs([{ ...EV, is_latest: true }]); setEditId(null); setMsg(""); setTab("edit"); window.scrollTo(0, 0); };
+  const openNew = () => { setF(EMPTY); setVs([{ ...EV, is_latest: true }]); setEditId(null); setBump(false); setMsg(""); setTab("edit"); window.scrollTo(0, 0); };
   const openEdit = async (id) => {
     const { data } = await supabase.from("software").select("*, versions(*)").eq("id", id).single();
     const base = Object.fromEntries(Object.keys(EMPTY).map((k) => [k, data[k] ?? EMPTY[k]]));
     base.publish_at = data.publish_at ? new Date(new Date(data.publish_at).getTime() - new Date(data.publish_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "";
     setF({ ...base, tags: (data.tags || []).join(", "), images: data.images || [], image_alts: data.image_alts || [] });
     setVs(data.versions.length ? data.versions.map((v) => Object.fromEntries(Object.keys(EV).map((k) => [k, v[k] ?? EV[k]]))) : [{ ...EV, is_latest: true }]);
-    setEditId(id); setMsg(""); setTab("edit"); window.scrollTo(0, 0);
+    setEditId(id); setBump(false); setMsg(""); setTab("edit"); window.scrollTo(0, 0);
   };
+  openEditRef.current = openEdit;
 
   const inp = (k, l, o = {}) => <F key={k} l={l} h={o.h} span={o.span}><input type={o.type || "text"} value={f[k]} placeholder={o.ph} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></F>;
   const area = (k, l, rows, h) => <F l={l} h={h} span><textarea rows={rows} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></F>;
@@ -72,11 +80,13 @@ export default function Admin() {
     const row = Object.fromEntries(Object.keys(EMPTY).map((k) => [k, f[k]]));
     Object.assign(row, { slug: f.slug || slugify(f.name), category_id: +f.category_id, rating: +f.rating || 0, rating_count: +f.rating_count || 0, tags: f.tags.split(",").map((x) => x.trim()).filter(Boolean) });
     row.publish_at = f.status === "scheduled" && f.publish_at ? new Date(f.publish_at).toISOString() : null;
+    if (bump) row.created_at = new Date().toISOString();   // list me sab se upar aane ke liye
     let id = editId, error;
     if (editId) { ({ error } = await supabase.from("software").update(row).eq("id", editId)); if (!error) await supabase.from("versions").delete().eq("software_id", editId); }
     else { const r = await supabase.from("software").insert(row).select("id").single(); error = r.error; id = r.data?.id; }
     if (error) { setBusy(false); return setMsg(error.message); }
-    const rows = vs.filter((v) => v.version && v.download_url).map((v) => ({ ...v, software_id: id, file_size_mb: v.file_size_mb || null, release_date: v.release_date || null }));
+    const li = Math.max(0, vs.findIndex((v) => v.is_latest)), today = new Date().toISOString().slice(0, 10);
+    const rows = vs.map((v, i) => (bump && i === li ? { ...v, release_date: today } : v)).filter((v) => v.version && v.download_url).map((v) => ({ ...v, software_id: id, file_size_mb: v.file_size_mb || null, release_date: v.release_date || null }));
     if (rows.length) { const { error: e2 } = await supabase.from("versions").insert(rows); if (e2) { setBusy(false); return setMsg(e2.message); } }
     setBusy(false); load(); setTab("posts"); setMsg("");
   };
@@ -106,13 +116,13 @@ export default function Admin() {
         <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}><h3 style={{ margin: 0 }}>Posts ({posts.length})</h3>
           <input className="a-search" placeholder="Search..." value={q} onChange={(e) => setQ(e.target.value)} style={{ marginLeft: "auto" }} />
           <button className="a-btn a-pri" onClick={openNew}>+ New Post</button></div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}><button className="a-btn" style={{ color: "#e5484d" }} onClick={() => wipe(true)}>Sirf Draft delete karen</button></div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}><button className="a-btn" style={{ color: "#e5484d" }} onClick={() => wipe(true)}>Sirf Draft delete karen</button><button className="a-btn" style={{ color: "#e5484d" }} onClick={() => wipe(false)}>Sari posts delete karen</button></div>
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
           {[["all", "All"], ["published", "Published"], ["draft", `Draft (${nDraft})`], ["scheduled", "Scheduled"]].map(([k, l]) => <button key={k} className={"a-btn" + (flt === k ? " a-pri" : "")} onClick={() => setFlt(k)}>{l}</button>)}
         </div>
         <div style={{ overflowX: "auto" }}><table className="a-tbl"><thead><tr><th>Name</th><th>Status</th><th>Downloads</th><th></th></tr></thead><tbody>
           {shown.map((p) => <tr key={p.id}><td>{p.name}</td><td><span className={"a-tag" + (p.status !== "published" ? " d" : "")}>{p.status}</span>{p.status === "scheduled" && p.publish_at && <div style={{ fontSize: 12, color: "#74767e" }}>{new Date(p.publish_at).toLocaleString()}</div>}</td><td>{p.download_count}</td>
-            <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{p.status !== "published" ? <button className="a-btn a-pri" onClick={() => setStatus(p.id, "published")}>Publish</button> : <button className="a-btn" onClick={() => setStatus(p.id, "draft")}>Unpublish</button>} <button className="a-btn" onClick={() => openEdit(p.id)}>Edit</button> <Link className="a-btn" to={`/software/${p.slug}`}>View</Link> <button className="a-btn" style={{ color: "#e5484d" }} onClick={() => del(p.id)}>Delete</button></td></tr>)}
+            <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{p.status !== "published" ? <button className="a-btn a-pri" onClick={() => setStatus(p.id, "published")}>Publish</button> : <button className="a-btn" onClick={() => setStatus(p.id, "draft")}>Unpublish</button>} <a className="a-btn" href={`/admin?edit=${p.id}`} onClick={(e) => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; e.preventDefault(); openEdit(p.id); }}>Edit</a> <Link className="a-btn" to={`/software/${p.slug}`}>View</Link> <button className="a-btn" style={{ color: "#e5484d" }} onClick={() => del(p.id)}>Delete</button></td></tr>)}
         </tbody></table></div></div>}
 
       {tab === "cats" && <Categories />}
@@ -132,6 +142,7 @@ export default function Admin() {
             <F l="Status"><select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="published">Published</option><option value="draft">Draft (website par nahi dikhe gi)</option><option value="scheduled">Scheduled (waqt par khud publish)</option></select></F>{f.status === "scheduled" && inp("publish_at", "Publish ki tareekh aur waqt", { type: "datetime-local" })}
             {inp("license_type", "License type")}{inp("languages", "Languages")}{inp("file_name", "File name")}
             {inp("rating", "Rating (0-5)", { type: "number" })}{inp("rating_count", "Rating count", { type: "number", h: "Schema me rating sirf tab jati hai jab count 0 se zyada ho" })}
+            {editId && <label className="a-pill a-span"><input type="checkbox" checked={bump} onChange={(e) => setBump(e.target.checked)} /> Save par latest date lagayen aur post ko sab se upar (top) layen</label>}
             <label className="a-pill a-span"><input type="checkbox" checked={f.is_featured} onChange={(e) => setF({ ...f, is_featured: e.target.checked })} /> Featured (crown dikhe)</label>
           </div></div>
 

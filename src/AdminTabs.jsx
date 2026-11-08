@@ -71,6 +71,11 @@ export function Settings() {
       {chk("show_categories_btn", "\"Categories\" button dikhayen")}{chk("cta_enabled", "Right side ka button dikhayen (jaise Add to chrome)")}
       {inp("cta_label", "Button text")}{inp("cta_url", "Button link (https://...)")}
     </Card>
+    <Card n="3a" t="Download page" s="ON ho to Download button pehle /download page par le jaye ga, countdown ke baad asal URL khulega. OFF ho to seedha post wala URL khulega">
+      {chk("dl_page_enabled", "Download page (countdown) ON rakhen")}
+      {inp("dl_wait", "Countdown (seconds)", { type: "number", h: "1 se 60 tak, jaise 5 ya 10" })}
+      {inp("dl_url", "Override URL (sab posts ke liye)", { span: true, h: "https://... Yahan link daalenge to countdown ke baad sab posts par yahi khule ga. Khali chhorenge to har post ka apna download URL khule ga" })}
+    </Card>
     <Card n="3" t="Home layout" s="Home page par kitni posts dikhen">
       {inp("home_items", "Main section me posts", { type: "number" })}{inp("sidebar_items", "Sidebar me posts", { type: "number" })}
     </Card>
@@ -80,7 +85,7 @@ export function Settings() {
       {inp("contact_email", "Contact email")}{inp("social", "Social links", { h: "Comma se alag: facebook, youtube ke URLs" })}
     </Card>
     <Card n="6" t="Image watermark" s="Slider images par aap ki website ka naam likha jata hai (import aur manual upload dono me)">
-      {chk("wm_enabled", "Images par watermark lagayen")}{inp("wm_text", "Watermark text", { span: true, h: "Apna domain likhen, jaise filecr.co.uk. Khali ho to us waqt ka address use hota hai" })}
+      {chk("wm_enabled", "Images par watermark lagayen")}{inp("wm_text", "Watermark text", { span: true, h: "Apna domain likhen, jaise softhub.com. Khali ho to us waqt ka address use hota hai" })}
     </Card>
     <Card n="5" t="Footer" s="Sab se neeche ka hissa">
       {inp("footer_text", "Copyright text", { span: true, h: "Khali ho to ©SiteName - All Rights Reserved 2026 dikhe ga" })}
