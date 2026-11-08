@@ -36,7 +36,7 @@ export default function Download() {
         if (!on) return;
         const vs = [...(data?.versions || [])].sort((a, b) => (b.is_latest - a.is_latest) || new Date(b.release_date) - new Date(a.release_date));
         const pick = (ver && vs.find((x) => String(x.version) === ver)) || vs[0];
-        if (error || !pick) setErr("Download link nahi mila.");
+        if (error || !pick) setErr("Download link not found.");
         else setV({ download_url: pick.download_url, software: { name: data.name, slug: data.slug } });
       });
     return () => { on = false; };
@@ -59,16 +59,16 @@ export default function Download() {
       <style>{css}</style>
       <div className="card">
         {err || (v && !target) ? (
-          <><h2>{err || "Download link nahi mila."}</h2><Link to="/" className="bk">← Home</Link></>
+          <><h2>{err || "Download link not found."}</h2><Link to="/" className="bk">← Home</Link></>
         ) : !v ? (
           <p>Loading...</p>
         ) : (
           <>
             <div className="ring"><span>{Math.max(left, 0)}</span></div>
             <h2>{v.software?.name || "Your file"}</h2>
-            <p className="sub">Aap ka download {Math.max(left, 0)} second me shuru ho jaye ga...</p>
-            <a className="go" href={target}>Abhi download karein</a>
-            {v.software?.slug && <Link to={`/software/${v.software.slug}`} className="bk">← Post par wapis jayen</Link>}
+            <p className="sub">Your download will start in {Math.max(left, 0)} second{left === 1 ? "" : "s"}...</p>
+            <a className="go" href={target}>Download now</a>
+            {v.software?.slug && <Link to={`/software/${v.software.slug}`} className="bk">← Back to post</Link>}
           </>
         )}
       </div>
