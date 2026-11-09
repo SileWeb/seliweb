@@ -24,7 +24,7 @@ export default function Download() {
   const [v, setV] = useState(null), [err, setErr] = useState("");
   const [left, setLeft] = useState(wait);
   // Admin me Override URL ho to wahi, warna post ka apna URL (sirf http/https allow)
-  const ov = (st.dl_url || "").trim();
+  const ov = st.dl_override_enabled ? (st.dl_url || "").trim() : "";
   const own = v?.download_url;
   const target = /^https?:\/\//i.test(ov) ? ov : (/^https?:\/\//i.test(own || "") ? own : "");
 

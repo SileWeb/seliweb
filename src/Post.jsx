@@ -66,7 +66,7 @@ export default function Post() {
   const [err, setErr] = useState("");
   const st = useSettings();
   // Setting ON ho to /download/<id> (countdown page), warna seedha asal URL
-  const dlHref = (v) => (st.dl_page_enabled && s?.slug && v ? `/download/${s.slug}` + (v.version && v !== newest(s.versions) ? `?v=${encodeURIComponent(v.version)}` : "") : v?.download_url);
+  const dlHref = (v) => (st.dl_page_enabled && s?.slug && v ? `/download/${s.slug}` + (v.version && v !== newest(s.versions) ? `?v=${encodeURIComponent(v.version)}` : "") : (st.dl_override_enabled && /^https?:\/\//i.test((st.dl_url || "").trim()) ? st.dl_url.trim() : v?.download_url));
 
   useEffect(() => {
     let on = true;

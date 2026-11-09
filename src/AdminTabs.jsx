@@ -74,7 +74,8 @@ export function Settings() {
     <Card n="3a" t="Download page" s="ON ho to Download button pehle /download page par le jaye ga, countdown ke baad asal URL khulega. OFF ho to seedha post wala URL khulega">
       {chk("dl_page_enabled", "Download page (countdown) ON rakhen")}
       {inp("dl_wait", "Countdown (seconds)", { type: "number", h: "1 se 60 tak, jaise 5 ya 10" })}
-      {inp("dl_url", "Override URL (sab posts ke liye)", { span: true, h: "https://... Yahan link daalenge to countdown ke baad sab posts par yahi khule ga. Khali chhorenge to har post ka apna download URL khule ga" })}
+      {chk("dl_override_enabled", "Override URL ON rakhen (sab posts par yahi link khule)")}
+      {inp("dl_url", "Override URL (sab posts ke liye)", { span: true, h: "https://... Upar wala switch ON ho tab yahi URL khule ga (countdown ke saath). Switch OFF ho to har post ka apna URL khule ga, URL yahan save rahe ga" })}
     </Card>
     <Card n="3" t="Home layout" s="Home page par kitni posts dikhen">
       {inp("home_items", "Main section me posts", { type: "number" })}{inp("sidebar_items", "Sidebar me posts", { type: "number" })}
