@@ -483,6 +483,16 @@ export default function App() {
     if (st.favicon_url) { let l = document.querySelector("link[rel=icon]"); if (!l) { l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); } l.href = st.favicon_url; }
     if (!location.pathname.startsWith("/software")) document.title = st.meta_title || st.site_name;
   }, [st]);
+  // Roz ka unique visitor count (IP Supabase function track_visit pakarta hai). Admin pages count nahi hote.
+  useEffect(() => {
+    if (admin) return;
+    try {
+      const k = "tv_" + new Date().toISOString().slice(0, 10);
+      if (sessionStorage.getItem(k)) return;
+      sessionStorage.setItem(k, "1");
+    } catch { /* storage band ho to bhi track karo */ }
+    supabase.rpc("track_visit").then(() => {}, () => {});
+  }, [admin]);
   return (<>
     <style>{css}</style>
     {!admin && <Nav />}
