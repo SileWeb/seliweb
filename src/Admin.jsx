@@ -4,12 +4,13 @@ import { supabase } from "./supabase";
 import { css, F, upload, slugify } from "./adminkit.jsx";
 import { Categories, Comments, Settings } from "./AdminTabs.jsx";
 import { ImportTab } from "./AdminImport.jsx";
+import { Stats } from "./AdminStats.jsx";
 import { useSettings } from "./site.jsx";
 
 const EMPTY = { name: "", slug: "", category_id: "", subcategory: "", short_desc: "", seo_title: "", content: "", sys_req: "", developer: "", license_type: "full_version", languages: "Multilingual", file_name: "", platform: "Windows", uploaded_by: "", tags: "", rating: 4.5, rating_count: 0, is_featured: false, icon_url: "", images: [], status: "published", custom_schema: "", source_type: "none", source_id: "", auto_update: true, official_site: "", publish_at: "", image_alts: [] };
 const EV = { version: "", release_date: "", file_size_mb: "", arch: "64-bit", os: "Windows 10/11", min_ram: "", min_cpu: "", min_storage: "", download_url: "", file_name: "", is_latest: false };
 const VF = [["version", "Version *"], ["release_date", "Release date", "date"], ["file_size_mb", "Size (MB)", "number"], ["arch", "Architecture"], ["os", "Operating system"], ["min_ram", "Min RAM"], ["min_cpu", "Min CPU"], ["min_storage", "Min storage"], ["file_name", "File name"], ["download_url", "Download URL *"]];
-const TABS = [["posts", "Posts"], ["import", "Import"], ["cats", "Categories"], ["comments", "Comments"], ["settings", "Settings"]];
+const TABS = [["posts", "Posts"], ["import", "Import"], ["cats", "Categories"], ["comments", "Comments"], ["stats", "Stats"], ["settings", "Settings"]];
 
 function Login() {
   const [m, setM] = useState("");
@@ -128,6 +129,7 @@ export default function Admin() {
       {tab === "cats" && <Categories />}
       {tab === "comments" && <Comments />}
       {tab === "import" && <ImportTab onDone={load} />}
+      {tab === "stats" && <Stats />}
       {tab === "settings" && <Settings />}
 
       {tab === "edit" && <>
