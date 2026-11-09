@@ -66,7 +66,8 @@ export default function Post() {
   const [err, setErr] = useState("");
   const st = useSettings();
   // Setting ON ho to /download/<id> (countdown page), warna seedha asal URL
-  const dlHref = (v) => (st.dl_page_enabled && s?.slug && v ? `/download/${s.slug}` + (v.version && v !== newest(s.versions) ? `?v=${encodeURIComponent(v.version)}` : "") : (st.dl_override_enabled && /^https?:\/\//i.test((st.dl_url || "").trim()) ? st.dl_url.trim() : v?.download_url));
+  const trackDl = () => supabase.rpc("track_download").then(() => {}, () => {});   // admin Stats ke liye unique download clicks
+  const dlHref = (v) => (st.dl_page_enabled && s?.slug && v ? `/download/${s.slug}` + (v.version && v !== newest(s.versions) ? `?v=${encodeURIComponent(v.version)}` : "") : v?.download_url);
 
   useEffect(() => {
     let on = true;
@@ -162,7 +163,7 @@ export default function Post() {
               <div className="pv" key={v.id}>
                 <div>{dt(v.release_date)}</div>
                 <div><b>File Name:</b> {v.file_name || `${s.name} ${v.version}`}<br /><b>Version:</b> {v.version} · {v.arch} · {v.os}<br /><small>RAM {v.min_ram || "—"} · CPU {v.min_cpu || "—"} · Disk {v.min_storage || "—"}</small></div>
-                <div style={{ textAlign: "center" }}><a className="dl" href={dlHref(v)} target="_blank" rel="noopener noreferrer" aria-label="Download"><Down /></a><div>{a} {b}</div></div>
+                <div style={{ textAlign: "center" }}><a className="dl" href={dlHref(v)} target="_blank" rel="noopener noreferrer" aria-label="Download" onClick={trackDl}><Down /></a><div>{a} {b}</div></div>
               </div>
             );
           })}
@@ -188,7 +189,7 @@ export default function Post() {
           <div className="big">{n}<small> {u}</small></div>
           <div><span className="badge">{s.rating}</span> {s.rating_count > 0 && <small>{s.rating_count} </small>}<Stars n={s.rating} /></div>
           <div className="opt"><i />Direct download</div>
-          <a className="b dark" href={dlHref(lv)} target="_blank" rel="noopener noreferrer" onClick={() => supabase.rpc("increment_download", { sid: s.id })}>Direct Download</a>
+          <a className="b dark" href={dlHref(lv)} target="_blank" rel="noopener noreferrer" onClick={() => { trackDl(); supabase.rpc("increment_download", { sid: s.id }); }}>Direct Download</a>
           <button className="b grn" onClick={toggleFav}><Heart /> {fav ? "Added to Favorite" : "Add to Favorite"}</button>
           <p><a href="#versions" className="vh"><Clock /> Version history</a></p>
         </div>
