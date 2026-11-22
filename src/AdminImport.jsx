@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { useSettings } from "./site.jsx";
 import { configure, importUrl, inspectUrl, setWait } from "./importer.js";
@@ -14,11 +14,16 @@ export function ImportTab({ onDone }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(""), [log, setLog] = useState([]);
   const [testUrl, setTestUrl] = useState(""), [testOut, setTestOut] = useState("");
+  const [cats, setCats] = useState([]), [catId, setCatId] = useState(ls("imp_cat", "")), [sub, setSub] = useState("");
+
+  useEffect(() => {
+    supabase.from("categories").select("id,name,icon").order("name").then(({ data }) => setCats(data || []));
+  }, []);
 
   const run = async () => {
     const urls = [...new Set(txt.split("\n").map((l) => l.trim()).filter((l) => /^https?:\/\//i.test(l)))];
     if (!urls.length) return setMsg("Har line me doosri website ki ek post ka poora link (https://...) likhen");
-    save("wm_text", wmText); save("wait_sel", wait); setWait(wait);;
+    save("wm_text", wmText); save("imp_cat", catId); save("wait_sel", wait); setWait(wait);
     setBusy(true); setLog([]);
     try {
       const { data: cats } = await supabase.from("categories").select("id,slug,icon,name");
@@ -26,7 +31,11 @@ export function ImportTab({ onDone }) {
       const one = async (u) => {
         let line;
         try {
-          const { id, warn, missing, tries } = await importUrl(supabase, u, cats || [], { withImages: true, watermark: wmText.trim() || wmDefault, skipExisting: true, onStep: (s) => setMsg(`${done}/${urls.length} ho chuki. ${s}`) });
+          const { id, warn, missing, tries } = await importUrl(supabase, u, cats || [], {
+            withImages: true, watermark: wmText.trim() || wmDefault, skipExisting: true,
+            categoryId: catId, subcategory: sub.trim(),
+            onStep: (s) => setMsg(`${done}/${urls.length} ho chuki. ${s}`),
+          });
           const complete = !missing.length && !warn.length;
           let fin = [];
           if (complete) { await supabase.from("software").update({ import_ready: true }).eq("id", id); fin = await finalizePost(supabase, id, (s) => setMsg(`${done}/${urls.length} ho chuki. ${s}`)); }   // final step: content + interlinking, phir Draft me ready
@@ -45,6 +54,14 @@ export function ImportTab({ onDone }) {
       <label className="a-f"><span className="a-l">Links (har line ek post ka link)</span>
         <textarea rows="7" value={txt} onChange={(e) => setTxt(e.target.value)} placeholder={"https://aap-ki-site.com/software/keka\nhttps://aap-ki-site.com/software/krita"} /></label>
       <div className="a-g" style={{ marginTop: 14 }}>
+        <label className="a-f"><span className="a-l">Post kis category me jaye</span>
+          <select value={catId} onChange={(e) => setCatId(e.target.value)}>
+            <option value="">Khud pehchano (purana tareeqa)</option>
+            {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <small>Is batch ki sab posts isi category me jayengi. PC Games ke liye PC Games chunen, Mac ke liye Mac Software.</small></label>
+        <label className="a-f"><span className="a-l">Subcategory (optional)</span>
+          <input value={sub} onChange={(e) => setSub(e.target.value)} placeholder="khali = koi nahi" /></label>
         <label className="a-f"><span className="a-l">Images par kya likha jaye (watermark)</span>
           <input value={wmText} onChange={(e) => setWmText(e.target.value)} placeholder={wmDefault || "khali = watermark nahi"} /></label>
         <label className="a-f a-span"><span className="a-l">Page me kaun si cheez aane tak ruka jaye (slider)</span><input value={wait} onChange={(e) => setWaitSel(e.target.value)} placeholder=".swiper-slide img" /><small>Slider ki class swiper hai to wohi rehne den. Is se page ka poora data load hone ke baad parha jata hai.</small></label>

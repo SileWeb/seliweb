@@ -470,12 +470,13 @@ export async function imgToStorage(supabase, src, w, square, wm) {
 
 export async function saveDraft(supabase, d, cats, opts = {}) {
   if (!d.name || (!d.version && !d.prev.length)) throw new Error(`Page me title/version nahi mila [${d.method}] naam="${d.name}" | page ka text: ${d.sample}`);
-  const mac = /mac|dmg|pkg/i.test((d.req.os || "") + " " + d.fileName);
-  const platform = mac ? "Mac" : "Windows";
-  const byCrumb = d.crumbs && d.crumbs[0] ? cats.find((c) => (c.name || "").toLowerCase() === d.crumbs[0].toLowerCase()) : null;
-  const cat = byCrumb || cats.find((c) => c.icon === (mac ? "apple" : "windows")) || cats[0];
-  const sub = d.crumbs && d.crumbs[1] && d.crumbs[1].toLowerCase() !== (cat?.name || "").toLowerCase() ? d.crumbs[1] : null;
-  const base = slugify(d.name); let slug = base, k = 2;
+const forced = opts.categoryId ? cats.find((c) => String(c.id) === String(opts.categoryId)) : null;   // admin ne khud category chuni
+const mac = forced ? forced.icon === "apple" : /mac|dmg|pkg/i.test((d.req.os || "") + " " + d.fileName);
+const platform = mac ? "Mac" : "Windows";
+const byCrumb = d.crumbs && d.crumbs[0] ? cats.find((c) => (c.name || "").toLowerCase() === d.crumbs[0].toLowerCase()) : null;
+const cat = forced || byCrumb || cats.find((c) => c.icon === (mac ? "apple" : "windows")) || cats[0];
+const sub = forced ? (opts.subcategory || null) : (d.crumbs && d.crumbs[1] && d.crumbs[1].toLowerCase() !== (cat?.name || "").toLowerCase() ? d.crumbs[1] : null);
+const base = slugify(d.name); let slug = base, k = 2;
   if (opts.skipExisting && (await supabase.from("software").select("id").eq("slug", slug).maybeSingle()).data) throw new Error("pehle se maujood hai (skip)");
   while ((await supabase.from("software").select("id").eq("slug", slug).maybeSingle()).data) slug = `${base}-${k++}`;
   const { data: post, error } = await supabase.from("software").insert({
